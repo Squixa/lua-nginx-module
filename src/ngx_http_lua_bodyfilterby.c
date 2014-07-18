@@ -352,6 +352,7 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
     ngx_buf_t           *b;
     int                  idx;
     ngx_chain_t         *in;
+    ngx_http_request_t  *r; /* only used for core dump logging */
 
     idx = luaL_checkint(L, 2);
 
@@ -364,6 +365,15 @@ ngx_http_lua_body_filter_param_get(lua_State *L)
 
     lua_getglobal(L, ngx_http_lua_chain_key);
     in = lua_touserdata(L, -1);
+
+    if (in == NULL) {
+        /* logging suspected scenario causing core dump */
+        dd("lua_touserdata(L, -1) returned NULL");
+        r = ngx_http_lua_get_req(L);
+        if (r && r->connection && r->connection->log) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "lua_touserdata(L, -1) returned NULL");
+        }
+    }
 
     if (idx == 2) {
         /* asking for the eof argument */
